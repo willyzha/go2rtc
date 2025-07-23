@@ -38,6 +38,8 @@ func Dial(rawURL string) (core.Producer, error) {
 	projectID := query.Get("project_id")
 	deviceID := query.Get("device_id")
 
+	log.Info().Msg("Dial")
+
 	if cliendID == "" || cliendSecret == "" || refreshToken == "" || projectID == "" || deviceID == "" {
 		return nil, errors.New("nest: wrong query")
 	}
@@ -74,6 +76,8 @@ func Dial(rawURL string) (core.Producer, error) {
 	if len(protocols) > 0 && protocols[0] == "RTSP" {
 		return rtspConn(nestAPI, rawURL, projectID, deviceID)
 	}
+
+	log.Info().Msg("Default to WEB_RTC")
 
 	// Default to WEB_RTC for backwards compataiility
 	return rtcConn(nestAPI, rawURL, projectID, deviceID)
