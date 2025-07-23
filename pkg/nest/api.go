@@ -184,10 +184,16 @@ func (a *API) ExchangeSDP(projectID, deviceID, offer string) (string, error) {
 			return "", err
 		}
 
-		// Handle 409 (Conflict), 429 (Too Many Requests), and 401 (Unauthorized)
-		if res.StatusCode == 409 || res.StatusCode == 429 || res.StatusCode == 401 {
+		// Handle 409 (Conflict) and 429 (Too Many Requests)
+		if res.StatusCode == 409 || res.StatusCode == 429 {
 			res.Body.Close()
 			if attempt < maxRetries-1 {
+				log.Info().
+					Int("status", res.StatusCode).
+					Float64("delay", retryDelay.Seconds()).
+					Int("attempt", attempt+1).
+					Int("max_retries", maxRetries-1).
+					Msg("API request failed, retrying")
 				// Get new token from Google
 				if err := a.refreshToken(); err != nil {
 					return "", err
@@ -465,22 +471,20 @@ type Device struct {
 }
 
 func (a *API) StartExtendStreamTimer() {
-	if a.extendTimer != nil {
-		return
-	}
-
-	a.extendTimer = time.NewTimer(time.Until(a.StreamExpiresAt) - time.Minute)
-	go func() {
-		<-a.extendTimer.C
+	// Calculate the duration until 30 seconds before the stream expires
+	duration := time.Until(a.StreamExpiresAt.Add(-30 * time.Second))
+	a.extendTimer = time.AfterFunc(duration, func() {
 		if err := a.ExtendStream(); err != nil {
 			return
 		}
-	}()
+		duration = time.Until(a.StreamExpiresAt.Add(-30 * time.Second))
+		a.extendTimer.Reset(duration)
+	})
 }
 
 func (a *API) StopExtendStreamTimer() {
-	if a.extendTimer != nil {
-		a.extendTimer.Stop()
-		a.extendTimer = nil
+	if a.extendTimer == nil {
+		return
 	}
+	a.extendTimer.Stop()
 }
