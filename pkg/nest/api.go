@@ -23,7 +23,7 @@ type API struct {
 	StreamSessionID string
 
 	// RTSP
-	StreamToken          string
+	StreamToken string
 	StreamExtensionToken string
 
 	extendTimer *time.Timer
@@ -123,7 +123,7 @@ func (a *API) GetDevices(projectID string) (map[string]string, error) {
 
 		supported := false
 		for _, protocol := range device.Traits.SdmDevicesTraitsCameraLiveStream.SupportedProtocols {
-			if protocol == "WEB_RTC" || protocol == "RTSP" {
+			if (protocol == "WEB_RTC" || protocol == "RTSP") {
 				supported = true
 				break
 			}
@@ -235,7 +235,7 @@ func (a *API) ExtendStream() error {
 	var reqv struct {
 		Command string `json:"command"`
 		Params  struct {
-			MediaSessionID       string `json:"mediaSessionId,omitempty"`
+			MediaSessionID string `json:"mediaSessionId,omitempty"`
 			StreamExtensionToken string `json:"streamExtensionToken,omitempty"`
 		} `json:"params"`
 	}
@@ -277,10 +277,10 @@ func (a *API) ExtendStream() error {
 
 	var resv struct {
 		Results struct {
-			ExpiresAt            time.Time `json:"expiresAt"`
-			MediaSessionID       string    `json:"mediaSessionId"`
-			StreamExtensionToken string    `json:"streamExtensionToken"`
-			StreamToken          string    `json:"streamToken"`
+			ExpiresAt      time.Time `json:"expiresAt"`
+			MediaSessionID string    `json:"mediaSessionId"`
+			StreamExtensionToken string `json:"streamExtensionToken"`
+			StreamToken string `json:"streamToken"`
 		} `json:"results"`
 	}
 
@@ -298,8 +298,8 @@ func (a *API) ExtendStream() error {
 
 func (a *API) GenerateRtspStream(projectID, deviceID string) (string, error) {
 	var reqv struct {
-		Command string   `json:"command"`
-		Params  struct{} `json:"params"`
+		Command string `json:"command"`
+		Params  struct {} `json:"params"`
 	}
 	reqv.Command = "sdm.devices.commands.CameraLiveStream.GenerateRtspStream"
 
@@ -329,10 +329,10 @@ func (a *API) GenerateRtspStream(projectID, deviceID string) (string, error) {
 
 	var resv struct {
 		Results struct {
-			StreamURLs           map[string]string `json:"streamUrls"`
-			StreamExtensionToken string            `json:"streamExtensionToken"`
-			StreamToken          string            `json:"streamToken"`
-			ExpiresAt            time.Time         `json:"expiresAt"`
+			StreamURLs map[string]string `json:"streamUrls"`
+			StreamExtensionToken string `json:"streamExtensionToken"`
+			StreamToken string `json:"streamToken"`
+			ExpiresAt      time.Time `json:"expiresAt"`
 		} `json:"results"`
 	}
 
