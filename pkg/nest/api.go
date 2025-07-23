@@ -33,12 +33,6 @@ type Auth struct {
 	AccessToken string
 }
 
-type DeviceInfo struct {
-	Name      string
-	DeviceID  string
-	Protocols []string
-}
-
 var cache = map[string]*API{}
 var cacheMu sync.Mutex
 
@@ -92,7 +86,7 @@ func NewAPI(clientID, clientSecret, refreshToken string) (*API, error) {
 	return api, nil
 }
 
-func (a *API) GetDevices(projectID string) ([]DeviceInfo, error) {
+func (a *API) GetDevices(projectID string) (map[string]string, error) {
 	uri := "https://smartdevicemanagement.googleapis.com/v1/enterprises/" + projectID + "/devices"
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -120,7 +114,7 @@ func (a *API) GetDevices(projectID string) ([]DeviceInfo, error) {
 		return nil, err
 	}
 
-	devices := make([]DeviceInfo, 0, len(resv.Devices))
+	devices := map[string]string{}
 
 	for _, device := range resv.Devices {
 		if len(device.Traits.SdmDevicesTraitsCameraLiveStream.SupportedProtocols) == 0 {
@@ -148,11 +142,38 @@ func (a *API) GetDevices(projectID string) ([]DeviceInfo, error) {
 		if name == "" && len(device.ParentRelations) > 0 {
 			name = device.ParentRelations[0].DisplayName
 		}
-
-		devices = append(devices, DeviceInfo{Name: name, DeviceID: device.Name[i+1:], Protocols: device.Traits.SdmDevicesTraitsCameraLiveStream.SupportedProtocols})
+		devices[name] = device.Name[i+1:]
 	}
 
 	return devices, nil
+}
+
+func (a *API) GetDevice(projectID, deviceID string) (Device, error) {
+	uri := "https://smartdevicemanagement.googleapis.com/v1/enterprises/" + projectID + "/devices/" + deviceID
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return Device{}, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+a.Token)
+
+	client := &http.Client{Timeout: time.Second * 5000}
+	res, err := client.Do(req)
+	if err != nil {
+		return Device{}, err
+	}
+
+	if res.StatusCode != 200 {
+		return Device{}, errors.New("nest: wrong status: " + res.Status)
+	}
+
+	var device Device
+
+	if err = json.NewDecoder(res.Body).Decode(&device); err != nil {
+		return Device{}, err
+	}
+
+	return device, nil
 }
 
 func (a *API) ExchangeSDP(projectID, deviceID, offer string) (string, error) {

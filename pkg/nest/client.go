@@ -3,7 +3,6 @@ package nest
 import (
 	"errors"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/AlexxIT/go2rtc/pkg/core"
@@ -34,12 +33,6 @@ func Dial(rawURL string) (core.Producer, error) {
 	refreshToken := query.Get("refresh_token")
 	projectID := query.Get("project_id")
 	deviceID := query.Get("device_id")
-	protocols := strings.Split(query.Get("protocols"), ",")
-
-	// Default to WEB_RTC for backwards compataiility
-	if len(protocols) == 0 {
-		protocols = append(protocols, "WEB_RTC")
-	}
 
 	if cliendID == "" || cliendSecret == "" || refreshToken == "" || projectID == "" || deviceID == "" {
 		return nil, errors.New("nest: wrong query")

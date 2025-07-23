@@ -2,7 +2,6 @@ package nest
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/AlexxIT/go2rtc/internal/api"
 	"github.com/AlexxIT/go2rtc/internal/streams"
@@ -39,12 +38,11 @@ func apiNest(w http.ResponseWriter, r *http.Request) {
 
 	var items []*api.Source
 
-	for _, device := range devices {
-		query.Set("device_id", device.DeviceID)
-		query.Set("protocols", strings.Join(device.Protocols, ","))
+	for name, deviceID := range devices {
+		query.Set("device_id", deviceID)
 
 		items = append(items, &api.Source{
-			Name: device.Name, URL: "nest:?" + query.Encode(),
+			Name: name, URL: "nest:?" + query.Encode(),
 		})
 	}
 
