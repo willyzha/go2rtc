@@ -34,6 +34,12 @@ func Dial(rawURL string) (core.Producer, error) {
 	refreshToken := query.Get("refresh_token")
 	projectID := query.Get("project_id")
 	deviceID := query.Get("device_id")
+	protocols := strings.Split(query.Get("protocols"), ",")
+
+	// Default to WEB_RTC for backwards compataiility
+	if len(protocols) == 0 {
+		protocols = append(protocols, "WEB_RTC")
+	}
 
 	if cliendID == "" || cliendSecret == "" || refreshToken == "" || projectID == "" || deviceID == "" {
 		return nil, errors.New("nest: wrong query")
@@ -61,13 +67,16 @@ func Dial(rawURL string) (core.Producer, error) {
 		return nil, lastErr
 	}
 
-	protocols := strings.Split(query.Get("protocols"), ",")
-	if len(protocols) > 0 && protocols[0] == "RTSP" {
-		return rtspConn(nestAPI, rawURL, projectID, deviceID)
+	// Pick the first supported protocol in order of priority (WEB_RTC, RTSP)
+	for _, proto := range protocols {
+		if proto == "WEB_RTC" {
+			return rtcConn(nestAPI, rawURL, projectID, deviceID)
+		} else if proto == "RTSP" {
+			return rtspConn(nestAPI, rawURL, projectID, deviceID)
+		}
 	}
 
-	// Default to WEB_RTC for backwards compataiility
-	return rtcConn(nestAPI, rawURL, projectID, deviceID)
+	return nil, errors.New("nest: unsupported camera")
 }
 
 func (c *WebRTCClient) GetMedias() []*core.Media {
